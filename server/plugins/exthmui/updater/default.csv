@@ -1,0 +1,4 @@
+p,Updater:Admin,Updater:Updates,read,allow
+p,Updater:Admin,Updater:Updates,write,allow
+p,anonymous,Updater:Updates,read,allow
+p,anonymous,Updater:Updates,write,deny

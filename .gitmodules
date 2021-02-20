@@ -1,0 +1,3 @@
+[submodule "vueprojects/oidc_templates"]
+	path = vueprojects/oidc_templates
+	url = https://github.com/ISNing/cindex_oidc_templates.git

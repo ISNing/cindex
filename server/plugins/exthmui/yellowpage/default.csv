@@ -1,0 +1,4 @@
+p,YellowPage:Admin,YellowPage:Data,read,allow
+p,YellowPage:Admin,YellowPage:Data,write,allow
+p,anonymous,YellowPage:Data,read,allow
+p,anonymous,YellowPage:Data,write,deny

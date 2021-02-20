@@ -1,0 +1,6 @@
+conf.json
+settings.py
+data/db.sqlite
+/data/
+/venv/
+/build/

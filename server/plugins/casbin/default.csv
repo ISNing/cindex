@@ -1,0 +1,6 @@
+g,GlobalAdmin,roots
+p,Policy:Admin,Casbin:Policies,read,allow
+p,Policy:Admin,Casbin:Policies,write,allow
+p,Policy:Admin,Casbin:Permissions,write,allow
+p,anonymous,Casbin:Policy,*,deny
+p,anonymous,Casbin:Policy,*,deny
