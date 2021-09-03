@@ -23,14 +23,16 @@ from .base_oauth import CResourceProtector, CAuthorizationServer, Scope
 from .models import OAuth2Client, OAuth2AuthorizationCode, OAuth2Token
 from .models import db, User
 
+from .constants import default_conf
+
 global_conf = util.get_global_conf()
-conf = util.get_conf('oauth')
+get_conf = util.gen_get_conf_checked('oauth', default_conf)
 
 pub_key_path = 'oauth/public_key.pem'
 priv_key_path = 'oauth/private_key.pem'
-if conf["pub_key_path"] and conf["priv_key_path"]:
-    pub_key_path = conf["pub_key_path"]
-    priv_key_path = conf["priv_key_path"]
+if get_conf("pub_key_path") and get_conf("priv_key_path"):
+    pub_key_path = get_conf("pub_key_path")
+    priv_key_path = get_conf("priv_key_path")
 pub_key_path = util.get_path_relate_from_work_dir(pub_key_path)
 priv_key_path = util.get_path_relate_from_work_dir(priv_key_path)
 
@@ -39,8 +41,8 @@ key = util.get_keys(pub_key_path, priv_key_path)
 DUMMY_JWT_CONFIG = {
     'key': key,
     'alg': 'RS256',
-    'iss': conf['issuer'],
-    'exp': conf['expired_in'],
+    'iss': get_conf('issuer'),
+    'exp': get_conf('expired_in'),
 }
 
 

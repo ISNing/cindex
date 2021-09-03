@@ -19,15 +19,10 @@ from .oauth2 import authorization, config_oauth, RevocationEndpoint
 from .restful import setup_api
 # TODO:Remove it before production
 from ..casbin.casbin import enforcer
+from .constants import default_conf
 
 os.environ['AUTHLIB_INSECURE_TRANSPORT'] = "true"
-default_conf = {
-    'url_prefix': '/login',
-    'expired_in': 6000,
-    'issuer': 'https://example.cn',
-    'pub_key_path': 'oauth/public_key.pem',
-    'priv_key_path': 'oauth/private_key.pem'
-}
+
 conf = util.get_conf_checked('oauth', default_conf)
 
 impl = "oauth"

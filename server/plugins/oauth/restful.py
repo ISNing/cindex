@@ -1,4 +1,5 @@
 from flask import Blueprint
+from flask.globals import session
 from flask_restx import Resource, fields
 
 from App import util, rest_util
@@ -42,7 +43,7 @@ class UserR(Resource):
         operation = data.get('operation')
         password = data.get('password')
         if operation == 'login':
-            oauth_util.login(username, password)
+            oauth_util.login(username, password, session)
             return RestResponse(None, "success")
         elif operation == 'signup':
             oauth_util.signup(username, password)

@@ -75,7 +75,7 @@ def __set_conf(obj: dict):
 
     :param obj: conf will be write in to file <dict>
     """
-    __get_conf()
+    __get_conf() # Check permissions of conf file
     with open(conf_file_path, 'w') as f:
         json.dump(obj, f, sort_keys=True, indent=4, separators=(',', ': '))
 
@@ -164,9 +164,10 @@ def dict_set(dic: dict, locators: list, target):
 
 def check_val_list(locators: list, default):
     """
-
-    :param locators:
-    :param default:
+    Check whether a value is available or not in conf(Locate with a list locater)
+    If not, insert it with the value of default.
+    :param locators: 
+    :param default: default value will be inserted if val not found
     :return: True if found conf ready
     """
     dic = __get_conf()
@@ -194,6 +195,21 @@ def get_conf_checked(locators: str, default, cb=None):
         cb(found_conf)
     return dict_get(__get_conf(), locators)
 
+def gen_get_conf_checked(locators: str, default, cb=None):
+    l = locators
+    def wrapper(locaters: str, default_val=None, cb=None):
+        if default_val is None:
+            default_val = dict_get(default, list(l.split(".")))
+        locaters += l
+        locators_list = list(locators.split('.'))
+        found_conf = check_val_list(locators_list, default_val)
+        if cb is not None:
+            cb(found_conf)
+        return dict_get(__get_conf(), locators)
+    return wrapper
+
+
+    
 
 def get_conf(locators: str):
     locators = list(locators.split('.'))
@@ -380,4 +396,4 @@ def composed(decs: list, is_reversed=False):
 
 
 def get_path_relate_from_work_dir(p):
-    return p if p.startswith("/") else os.path.join(get_work_dir() + p)
+    return p if os.path.isabs(p) else os.path.join(get_work_dir() + p)

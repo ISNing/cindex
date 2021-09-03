@@ -38,13 +38,13 @@ def gen_scopes_from_conf(scope_conf: list, domain=None):
     return scopes
 
 
-def login(username, password):
+def login(username: str, password: str, session):
     user = User.query.filter_by(username=username).first()
     if not user:
         raise UserNotFoundException()
     if not user.check_password(password):
         raise InvalidPasswordException()
-    db.session['id'] = user.id
+    session['id'] = user.id
     return user
 
 
