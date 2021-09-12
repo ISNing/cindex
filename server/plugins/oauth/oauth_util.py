@@ -1,4 +1,6 @@
+from App import util
 from plugins.oauth.base_oauth import Scope, CResourceProtector, CBearerTokenValidator
+from plugins.oauth.constants import default_conf
 from plugins.oauth.errors import UserNotFoundException, InvalidPasswordException, UserAlreadyExistsException
 from plugins.oauth.models import User, db
 
@@ -38,22 +40,14 @@ def gen_scopes_from_conf(scope_conf: list, domain=None):
     return scopes
 
 
-def login(username: str, password: str, session):
-    user = User.query.filter_by(username=username).first()
-    if not user:
-        raise UserNotFoundException()
-    if not user.check_password(password):
-        raise InvalidPasswordException()
-    session['id'] = user.id
-    return user
+def get_key_paths():
+    get_conf = util.gen_get_conf_checked('oauth', default_conf)
 
-
-def signup(username, password, id=None):
-    if User.query.filter_by(username=username).first():
-        raise UserAlreadyExistsException()
-    user = User(username=username, password=password)
-    if id:
-        user.id = id
-    db.session.add(user)
-    db.session.commit()
-    return user
+    pub_key_path = 'oauth/public_key.pem'
+    priv_key_path = 'oauth/private_key.pem'
+    if get_conf("pub_key_path") and get_conf("priv_key_path"):
+        pub_key_path = get_conf("pub_key_path")
+        priv_key_path = get_conf("priv_key_path")
+    pub_key_path = util.get_path_relate_from_work_dir(pub_key_path)
+    priv_key_path = util.get_path_relate_from_work_dir(priv_key_path)
+    return pub_key_path, priv_key_path

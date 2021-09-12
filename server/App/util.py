@@ -19,6 +19,7 @@ default_global_conf = {
         'work_dir': 'data/'
     }
 }
+temp_state = {}
 
 conf = {}
 conf_folder_path = os.getcwd()
@@ -75,7 +76,7 @@ def __set_conf(obj: dict):
 
     :param obj: conf will be write in to file <dict>
     """
-    __get_conf() # Check permissions of conf file
+    __get_conf()  # Check permissions of conf file
     with open(conf_file_path, 'w') as f:
         json.dump(obj, f, sort_keys=True, indent=4, separators=(',', ': '))
 
@@ -109,13 +110,13 @@ def dict_get(dic: dict, locators: list, default=None, err_msg=None):
                 if flag_e:
                     logger.warning(e if err_msg is None else err_msg)
                 return default
-        if isinstance(value, dict):
+        elif isinstance(value, dict):
             try:
                 value = dict_get(value, [locator])
             except KeyError:
                 return default
             continue
-        if isinstance(value, list) and isinstance(locator, int):
+        elif isinstance(value, list) and isinstance(locator, int):
             try:
                 value = value[locator]
             except IndexError as e:
@@ -123,6 +124,12 @@ def dict_get(dic: dict, locators: list, default=None, err_msg=None):
                     logger.warning((repr(e) + '\n' + str(traceback.format_exc())) if err_msg is None else err_msg)
                 return default
             continue
+        elif isinstance(value, dict):
+            try:
+                value = dict_get(value, [locator])
+            except KeyError:
+                return default
+
     return value
 
 
@@ -195,21 +202,22 @@ def get_conf_checked(locators: str, default, cb=None):
         cb(found_conf)
     return dict_get(__get_conf(), locators)
 
-def gen_get_conf_checked(locators: str, default, cb=None):
+
+def gen_get_conf_checked(locators: str, default):
     l = locators
-    def wrapper(locaters: str, default_val=None, cb=None):
+
+    def wrapper(locators: str, default_val=None, cb=None):
         if default_val is None:
-            default_val = dict_get(default, list(l.split(".")))
-        locaters += l
+            default_val = dict_get(default, list(locators.split(".")))
+        locators = l + "." + locators
         locators_list = list(locators.split('.'))
         found_conf = check_val_list(locators_list, default_val)
         if cb is not None:
             cb(found_conf)
-        return dict_get(__get_conf(), locators)
+        return dict_get(__get_conf(), locators_list)
+
     return wrapper
 
-
-    
 
 def get_conf(locators: str):
     locators = list(locators.split('.'))
@@ -299,8 +307,14 @@ def read_file_content(f_path: str, cb: callable):
     f_wok = os.access(f_path, os.W_OK)
     flag = False
     flag_c = False
+    global temp_state
+    temp_state['cb_called'] = False
     while True:
         if f_fok and f_rok and f_wok:
+            if cb and not temp_state['cb_called']:
+                f = open(f_path, 'a')
+                cb(True, f)
+                temp_state['cb_called'] = True
             with open(f_path, 'r') as f:
                 global conf
                 return f.read()
@@ -313,9 +327,10 @@ def read_file_content(f_path: str, cb: callable):
                     logger.critical('\'{}\' create failed'.format(f_path))
                     flag_c = True
                 elif os.access(f_folder_path, os.W_OK):
-                    if cb:
-                        with open(f_path, 'w') as f:
-                            cb(f)
+                    if cb and not temp_state['cb_called']:
+                        f = open(f_path, 'x')
+                        cb(False, f)
+                        temp_state['cb_called'] = True
                 else:
                     logger.critical('\'{}\' is not writeable'.format(f_folder_path))
                     flag_c = True
@@ -347,20 +362,30 @@ def new_keys(nbits: int):
 
 
 def get_keys(pub_key_path, priv_key_path):
-    readable = True
-    pub_f: IO = IO()
-    priv_f: IO = IO()
-    pub_str = read_file_content(pub_key_path, lambda f: exec("readable=False\npub_f=f"))
-    priv_str = read_file_content(priv_key_path, lambda f: exec("readable=False\npriv_f=f"))
-    while not readable:
-        readable = True
+    global temp_state
+
+    def pub_cb(result, f):
+        global temp_state
+        temp_state['readable'] = result
+        temp_state['pub_f'] = f
+
+    def priv_cb(result, f):
+        global temp_state
+        temp_state['readable'] = result
+        temp_state['priv_f'] = f
+
+    pub_str = read_file_content(pub_key_path, pub_cb)
+    priv_str = read_file_content(priv_key_path, priv_cb)
+    while not temp_state['readable']:
         (pub_bytes, priv_bytes) = new_keys(2048)
-        pub_f.write(str(pub_bytes))
-        pub_f.close()
-        priv_f.write(str(priv_bytes))
-        priv_f.close()
-        pub_str = read_file_content(pub_key_path, lambda f: exec("readable=False\npub_f=f"))
-        priv_str = read_file_content(priv_key_path, lambda f: exec("readable=False\npriv_f=f"))
+        temp_state['pub_f'].write(str(pub_bytes))
+        temp_state['pub_f'].close()
+        temp_state['priv_f'].write(str(priv_bytes))
+        temp_state['priv_f'].close()
+        pub_str = read_file_content(pub_key_path, pub_cb)
+        priv_str = read_file_content(priv_key_path, priv_cb)
+    if not temp_state['readable']:
+        raise PermissionError('Found key files but cannot read it')
     return pub_str, priv_str
 
 

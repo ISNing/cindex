@@ -13,9 +13,10 @@ default_conf = {
 conf = util.get_conf_checked('casbin', default_conf)
 
 
-def write_in_default_model_conf(f):
-    model_conf = util.read_file_content(os.path.abspath(os.path.join(os.path.dirname(__file__), "./model.conf")), None)
-    f.write(model_conf)
+def write_in_default_model_conf(exist, f):
+    if not exist:
+        model_conf = util.read_file_content(os.path.abspath(os.path.join(os.path.dirname(__file__), "./model.conf")), None)
+        f.write(model_conf)
 
 
 db = None

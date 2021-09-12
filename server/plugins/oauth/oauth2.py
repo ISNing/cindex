@@ -19,6 +19,7 @@ from authlib.oidc.core.grants import (
 )
 
 from App import util
+from . import oauth_util
 from .base_oauth import CResourceProtector, CAuthorizationServer, Scope
 from .models import OAuth2Client, OAuth2AuthorizationCode, OAuth2Token
 from .models import db, User
@@ -28,19 +29,13 @@ from .constants import default_conf
 global_conf = util.get_global_conf()
 get_conf = util.gen_get_conf_checked('oauth', default_conf)
 
-pub_key_path = 'oauth/public_key.pem'
-priv_key_path = 'oauth/private_key.pem'
-if get_conf("pub_key_path") and get_conf("priv_key_path"):
-    pub_key_path = get_conf("pub_key_path")
-    priv_key_path = get_conf("priv_key_path")
-pub_key_path = util.get_path_relate_from_work_dir(pub_key_path)
-priv_key_path = util.get_path_relate_from_work_dir(priv_key_path)
+pub_key_path, priv_key_path = oauth_util.get_key_paths()
 
 key = util.get_keys(pub_key_path, priv_key_path)
 
 DUMMY_JWT_CONFIG = {
     'key': key,
-    'alg': 'RS256',
+    'alg': get_conf('algorithm'),
     'iss': get_conf('issuer'),
     'exp': get_conf('expired_in'),
 }

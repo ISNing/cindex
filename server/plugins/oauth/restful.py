@@ -1,10 +1,11 @@
 from flask import Blueprint
-from flask.globals import session
 from flask_restx import Resource, fields
 
 from App import util, rest_util
 from App.base_restful import CApi, RestResponse
 from . import oauth_util
+from .constants import default_conf
+from .misc import user_util, jwt_util
 from .api_config import api_conf
 from .errors import UserNotFoundException, InvalidPasswordException, UserAlreadyExistsException, \
     InvalidOperationException, ScopeNotFoundException, DomainNotFoundException
@@ -14,6 +15,8 @@ require_oauth = oauth_util.gen_resource_protector(D_TAG)
 
 uc_api: CApi = rest_util.gen_api(None, api_conf)
 api: CApi = uc_api
+
+get_conf = util.gen_get_conf_checked('oauth', default_conf)
 
 
 def setup_api(bp: Blueprint):
@@ -43,11 +46,29 @@ class UserR(Resource):
         operation = data.get('operation')
         password = data.get('password')
         if operation == 'login':
-            oauth_util.login(username, password, session)
-            return RestResponse(None, "success")
+            user = user_util.get_user(username=username)
+            if not user:
+                raise UserNotFoundException()
+            if not user_util.identify_with_passwd(user, password):
+                raise InvalidPasswordException()
+            else:
+                pub, priv = oauth_util.get_key_paths()
+                pub, priv = util.get_keys(pub, priv)
+                token = jwt_util.generate_access_token(priv, uid=user.id, algorithm=get_conf('algorithm'),
+                                                       issuer=get_conf('issuer'), exp=get_conf('expired_in'))
+                resp = RestResponse({'accessTOKEN': token}, "success")
+                resp.set_cookie('accessToken', token, max_age=25200)
+                return resp
+
         elif operation == 'signup':
-            oauth_util.signup(username, password)
-            return RestResponse(None, "success")
+            user = user_util.signup(username, password)
+            pub, priv = oauth_util.get_key_paths()
+            key = util.get_keys(pub, priv)
+            token = jwt_util.generate_access_token(key, uid=user.id, algorithm=get_conf('algorithm'),
+                                                   issuer=get_conf('issuer'), exp=get_conf('expired_in'))
+            resp = RestResponse(token, "success")
+            resp.set_cookie('accessToken', token, max_age=25200)
+            return resp
         else:
             raise InvalidOperationException()
 
