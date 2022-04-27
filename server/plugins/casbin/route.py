@@ -3,10 +3,10 @@ import os
 from flask import Blueprint
 from flask_restx import Resource, fields
 
+from .errors import DomainNotFoundException, PermissionNotFoundException
 from App import rest_util, util
 from App.base_restful import RestResponse
 from App.errors import InvalidJSONSyntaxException
-from plugins.exthmui.updater.errors import PermissionNotFoundException, DomainNotFoundException
 from plugins.oauth import oauth_util
 from . import casbin, perm_util
 from .api_config import api_conf
